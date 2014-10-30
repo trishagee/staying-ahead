@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class ParallelPerformanceTest {
+    private static final double NUMBER_OF_ITERATIONS = 10_000;
     private Datastore datastore;
 
     @Before
@@ -24,27 +25,25 @@ public class ParallelPerformanceTest {
         List<CoffeeShop> coffeeShops = datastore.find(CoffeeShop.class).asList();
         System.out.printf("Number Of Shops: %d%n", coffeeShops.size());
         System.out.println("Warming Up...");
-        warmupMap(100, coffeeShops);
+        warmupMap(NUMBER_OF_ITERATIONS, coffeeShops);
+        List<String> coffeeShopNames = null;
 
         long totalTime = 0;
-        for (int i = 0; i < 50; i++) {
-            // given
-            System.out.printf("--- Run: %d ---%n", i);
-
+        long startTime = System.currentTimeMillis();
+        for (int i = 0; i < NUMBER_OF_ITERATIONS; i++) {
             // when
-            long startTime = System.currentTimeMillis();
-            List<String> coffeeShopNames = coffeeShops.stream()
-                                                      .map(CoffeeShop::getName)
-                                                      .collect(Collectors.toList());
-            long endTime = System.currentTimeMillis();
-
-            // then
-            long timeTaken = endTime - startTime;
-            System.out.printf("Time Taken: %d millis%n", timeTaken);
-            System.out.printf("Number of coffee shop names: %d%n", coffeeShopNames.size());
-            totalTime += timeTaken;
+            coffeeShopNames = coffeeShops.stream()
+                                         .map(CoffeeShop::getName)
+                                         .collect(Collectors.toList());
         }
-        System.out.printf("Mean time taken: " + totalTime / 100);
+        // then
+        long endTime = System.currentTimeMillis();
+        long timeTaken = endTime - startTime;
+        System.out.printf("Time Taken: %d millis%n", timeTaken);
+        System.out.printf("Number of coffee shop names: %d%n", coffeeShopNames.size());
+        totalTime += timeTaken;
+        System.out.printf("Mean time taken: " + totalTime / NUMBER_OF_ITERATIONS);
+        //0.807
     }
 
     @Test
@@ -53,80 +52,71 @@ public class ParallelPerformanceTest {
         List<CoffeeShop> coffeeShops = datastore.find(CoffeeShop.class).asList();
         System.out.printf("Number Of Shops: %d%n", coffeeShops.size());
         System.out.println("Warming Up...");
-        warmupMapParallel(100, coffeeShops);
+        warmupMapParallel(NUMBER_OF_ITERATIONS, coffeeShops);
+        List<String> coffeeShopNames = null;
 
         long totalTime = 0;
-        for (int i = 0; i < 50; i++) {
-            System.out.printf("--- Run: %d ---%n", i);
-
-            // when
-            long startTime = System.currentTimeMillis();
-            List<String> coffeeShopNames = coffeeShops.parallelStream()
-                                                           .map(CoffeeShop::getName)
-                                                           .collect(Collectors.toList());
-            long endTime = System.currentTimeMillis();
-
-            // then
-            long timeTaken = endTime - startTime;
-            System.out.printf("Time Taken: %d millis%n", timeTaken);
-            System.out.printf("Number of coffee shop names: %d%n", coffeeShopNames.size());
-            totalTime += timeTaken;
+        long startTime = System.currentTimeMillis();
+        for (int i = 0; i < NUMBER_OF_ITERATIONS; i++) {
+            coffeeShopNames = coffeeShops.parallelStream()
+                                         .map(CoffeeShop::getName)
+                                         .collect(Collectors.toList());
         }
-        System.out.printf("Mean time taken: " + totalTime / 100);
+        long endTime = System.currentTimeMillis();
+        long timeTaken = endTime - startTime;
+        System.out.printf("Time Taken: %d millis%n", timeTaken);
+        System.out.printf("Number of coffee shop names: %d%n", coffeeShopNames.size());
+        totalTime += timeTaken;
+        System.out.printf("Mean time taken: " + totalTime / NUMBER_OF_ITERATIONS);
+        //0.5856
     }
 
     @Test
-    public void shouldPerformMatchOKWhenSerial() {
+    public void shouldPerformMatchBetterWhenSerial() {
         // given
         List<CoffeeShop> coffeeShops = datastore.find(CoffeeShop.class).asList();
         System.out.printf("Number Of Shops: %d%n", coffeeShops.size());
         System.out.println("Warming Up...");
-        warmupMatch(100, coffeeShops);
+        warmupMatch(NUMBER_OF_ITERATIONS, coffeeShops);
+        boolean starbucksFound = false;
 
         long totalTime = 0;
-        for (int i = 0; i < 50; i++) {
-            System.out.printf("--- Run: %d ---%n", i);
-
-            // when
-            long startTime = System.currentTimeMillis();
-            boolean starbucksFound = coffeeShops.stream()
-                                                .anyMatch((coffeeShop) -> coffeeShop.getName().equals("Starbucks"));
-            long endTime = System.currentTimeMillis();
-
-            // then
-            long timeTaken = endTime - startTime;
-            System.out.printf("Time Taken: %d millis%n", timeTaken);
-            System.out.printf("Starbucks is in there? %s%n", starbucksFound);
-            totalTime += timeTaken;
+        long startTime = System.currentTimeMillis();
+        for (int i = 0; i < NUMBER_OF_ITERATIONS; i++) {
+            starbucksFound = coffeeShops.stream()
+                                        .anyMatch((coffeeShop) -> coffeeShop.getName().equals("Starbucks"));
         }
-        System.out.printf("Mean time taken: " + totalTime / 100);
+        long endTime = System.currentTimeMillis();
+        long timeTaken = endTime - startTime;
+        System.out.printf("Time Taken: %d millis%n", timeTaken);
+        System.out.printf("Starbucks is in there? %s%n", starbucksFound);
+        totalTime += timeTaken;
+        System.out.printf("Mean time taken: " + totalTime / NUMBER_OF_ITERATIONS);
+        //0.0013
     }
 
     @Test
-    public void shouldPerformMatchBetterWhenParallel() {
+    public void shouldPerformMatchWorseWhenParallel() {
         // given
         List<CoffeeShop> coffeeShops = datastore.find(CoffeeShop.class).asList();
         System.out.printf("Number Of Shops: %d%n", coffeeShops.size());
         System.out.println("Warming Up...");
-        warmupMatchParallel(100, coffeeShops);
+        warmupMatchParallel(NUMBER_OF_ITERATIONS, coffeeShops);
+        boolean starbucksFound = false;
 
         long totalTime = 0;
-        for (int i = 0; i < 50; i++) {
-            System.out.printf("--- Run: %d ---%n", i);
-
-            // when
-            long startTime = System.currentTimeMillis();
-            boolean starbucksFound = coffeeShops.parallelStream()
-                                                .anyMatch((coffeeShop) -> coffeeShop.getName().equals("Starbucks"));
-            long endTime = System.currentTimeMillis();
-
-            // then
-            long timeTaken = endTime - startTime;
-            System.out.printf("Time Taken: %d millis%n", timeTaken);
-            System.out.printf("Starbucks is in there? %s%n", starbucksFound);
-            totalTime += timeTaken;
+        long startTime = System.currentTimeMillis();
+        for (int i = 0; i < NUMBER_OF_ITERATIONS; i++) {
+            starbucksFound = coffeeShops.parallelStream()
+                                        .anyMatch((coffeeShop) -> coffeeShop.getName().equals("Starbucks"));
         }
-        System.out.printf("Mean time taken: " + totalTime / 100);
+        long endTime = System.currentTimeMillis();
+        long timeTaken = endTime - startTime;
+        System.out.printf("Time Taken: %d millis%n", timeTaken);
+        System.out.printf("Starbucks is in there? %s%n", starbucksFound);
+        totalTime += timeTaken;
+        System.out.printf("Mean time taken: " + totalTime / NUMBER_OF_ITERATIONS);
+        //0.0145
     }
 
     @Test
@@ -135,24 +125,21 @@ public class ParallelPerformanceTest {
         List<CoffeeShop> coffeeShops = datastore.find(CoffeeShop.class).asList();
         System.out.printf("Number Of Shops: %d%n", coffeeShops.size());
         System.out.println("Warming Up...");
-        warmupCount(100, coffeeShops);
+        warmupCount(NUMBER_OF_ITERATIONS, coffeeShops);
+        long numberOfShops = 0;
 
         long totalTime = 0;
-        for (int i = 0; i < 50; i++) {
-            System.out.printf("--- Run: %d ---%n", i);
-
-            // when
-            long startTime = System.currentTimeMillis();
-            long numberOfShops = coffeeShops.stream().count();
-            long endTime = System.currentTimeMillis();
-
-            // then
-            long timeTaken = endTime - startTime;
-            System.out.printf("Time Taken: %d millis%n", timeTaken);
-            System.out.printf("There were %d shops%n", numberOfShops);
-            totalTime += timeTaken;
+        long startTime = System.currentTimeMillis();
+        for (int i = 0; i < NUMBER_OF_ITERATIONS; i++) {
+            numberOfShops = coffeeShops.stream().count();
         }
-        System.out.printf("Mean time taken: " + totalTime / 100);
+        long endTime = System.currentTimeMillis();
+        long timeTaken = endTime - startTime;
+        System.out.printf("Time Taken: %d millis%n", timeTaken);
+        System.out.printf("There were %d shops%n", numberOfShops);
+        totalTime += timeTaken;
+        System.out.printf("Mean time taken: " + totalTime / NUMBER_OF_ITERATIONS);
+        //0.3625
     }
 
     @Test
@@ -161,27 +148,24 @@ public class ParallelPerformanceTest {
         List<CoffeeShop> coffeeShops = datastore.find(CoffeeShop.class).asList();
         System.out.printf("Number Of Shops: %d%n", coffeeShops.size());
         System.out.println("Warming Up...");
-        warmupCountParallel(100, coffeeShops);
+        warmupCountParallel(NUMBER_OF_ITERATIONS, coffeeShops);
+        long numberOfShops = 0;
 
         long totalTime = 0;
-        for (int i = 0; i < 50; i++) {
-            System.out.printf("--- Run: %d ---%n", i);
-
-            // when
-            long startTime = System.currentTimeMillis();
-            long numberOfShops = coffeeShops.parallelStream().count();
-            long endTime = System.currentTimeMillis();
-
-            // then
-            long timeTaken = endTime - startTime;
-            System.out.printf("Time Taken: %d millis%n", timeTaken);
-            System.out.printf("There were %d shops%n", numberOfShops);
-            totalTime += timeTaken;
+        long startTime = System.currentTimeMillis();
+        for (int i = 0; i < NUMBER_OF_ITERATIONS; i++) {
+            numberOfShops = coffeeShops.parallelStream().count();
         }
-        System.out.printf("Mean time taken: " + totalTime / 100);
+        long endTime = System.currentTimeMillis();
+        long timeTaken = endTime - startTime;
+        System.out.printf("Time Taken: %d millis%n", timeTaken);
+        System.out.printf("There were %d shops%n", numberOfShops);
+        totalTime += timeTaken;
+        System.out.printf("Mean time taken: " + totalTime / NUMBER_OF_ITERATIONS);
+        //0.0123
     }
 
-    private void warmupMatch(final int numberOfIterations, final List<CoffeeShop> coffeeShops) {
+    private void warmupMatch(final double numberOfIterations, final List<CoffeeShop> coffeeShops) {
         for (int i = 0; i < numberOfIterations; i++) {
             coffeeShops.stream().anyMatch((coffeeShop) -> coffeeShop.getName().equals("Starbucks"));
         }
@@ -189,7 +173,7 @@ public class ParallelPerformanceTest {
         System.gc();
     }
 
-    private void warmupMatchParallel(final int numberOfIterations, final List<CoffeeShop> coffeeShops) {
+    private void warmupMatchParallel(final double numberOfIterations, final List<CoffeeShop> coffeeShops) {
         for (int i = 0; i < numberOfIterations; i++) {
             coffeeShops.parallelStream().anyMatch((coffeeShop) -> coffeeShop.getName().equals("Starbucks"));
         }
@@ -197,7 +181,7 @@ public class ParallelPerformanceTest {
         System.gc();
     }
 
-    private void warmupCount(final int numberOfIterations, final List<CoffeeShop> coffeeShops) {
+    private void warmupCount(final double numberOfIterations, final List<CoffeeShop> coffeeShops) {
         for (int i = 0; i < numberOfIterations; i++) {
             coffeeShops.stream().count();
         }
@@ -205,7 +189,7 @@ public class ParallelPerformanceTest {
         System.gc();
     }
 
-    private void warmupCountParallel(final int numberOfIterations, final List<CoffeeShop> coffeeShops) {
+    private void warmupCountParallel(final double numberOfIterations, final List<CoffeeShop> coffeeShops) {
         for (int i = 0; i < numberOfIterations; i++) {
             coffeeShops.parallelStream().count();
         }
@@ -213,7 +197,7 @@ public class ParallelPerformanceTest {
         System.gc();
     }
 
-    private void warmupMap(final int numberOfIterations, final List<CoffeeShop> coffeeShops) {
+    private void warmupMap(final double numberOfIterations, final List<CoffeeShop> coffeeShops) {
         for (int i = 0; i < numberOfIterations; i++) {
             coffeeShops.stream()
                        .map(CoffeeShop::getName)
@@ -223,7 +207,7 @@ public class ParallelPerformanceTest {
         System.gc();
     }
 
-    private void warmupMapParallel(final int numberOfIterations, final List<CoffeeShop> coffeeShops) {
+    private void warmupMapParallel(final double numberOfIterations, final List<CoffeeShop> coffeeShops) {
         for (int i = 0; i < numberOfIterations; i++) {
             coffeeShops.parallelStream()
                        .map(CoffeeShop::getName)
