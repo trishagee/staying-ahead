@@ -20,6 +20,7 @@ public class ParallelPerformanceTest {
         datastore = new Morphia().createDatastore(mongoClient, "Cafelito");
     }
 
+    /* Check the Activity Monitor CPU Usage */
     @Test
     public void shouldPerformMapOKWhenSerial() {
         List<CoffeeShop> coffeeShops = datastore.find(CoffeeShop.class).asList();
@@ -31,7 +32,6 @@ public class ParallelPerformanceTest {
         long totalTime = 0;
         long startTime = System.currentTimeMillis();
         for (int i = 0; i < NUMBER_OF_ITERATIONS; i++) {
-            // when
             coffeeShopNames = coffeeShops.stream()
                                          .map(CoffeeShop::getName)
                                          .collect(Collectors.toList());
@@ -43,7 +43,8 @@ public class ParallelPerformanceTest {
         System.out.printf("Number of coffee shop names: %d%n", coffeeShopNames.size());
         totalTime += timeTaken;
         System.out.printf("Mean time taken: " + totalTime / NUMBER_OF_ITERATIONS);
-        //0.807
+        //0.807 - 5 times data
+        //0.1409 - basic data
     }
 
     @Test
@@ -58,6 +59,7 @@ public class ParallelPerformanceTest {
         long totalTime = 0;
         long startTime = System.currentTimeMillis();
         for (int i = 0; i < NUMBER_OF_ITERATIONS; i++) {
+            // MAGIC PARALLEL INCANTATION
             coffeeShopNames = coffeeShops.parallelStream()
                                          .map(CoffeeShop::getName)
                                          .collect(Collectors.toList());
@@ -68,11 +70,12 @@ public class ParallelPerformanceTest {
         System.out.printf("Number of coffee shop names: %d%n", coffeeShopNames.size());
         totalTime += timeTaken;
         System.out.printf("Mean time taken: " + totalTime / NUMBER_OF_ITERATIONS);
-        //0.5856
+        //0.5856 5x
+        //0.1157 1x
     }
 
     @Test
-    public void shouldPerformMatchBetterWhenSerial() {
+    public void shouldPerformAnyMatchBetterWhenSerial() {
         // given
         List<CoffeeShop> coffeeShops = datastore.find(CoffeeShop.class).asList();
         System.out.printf("Number Of Shops: %d%n", coffeeShops.size());
@@ -96,7 +99,7 @@ public class ParallelPerformanceTest {
     }
 
     @Test
-    public void shouldPerformMatchWorseWhenParallel() {
+    public void shouldPerformAnyMatchWorseWhenParallel() {
         // given
         List<CoffeeShop> coffeeShops = datastore.find(CoffeeShop.class).asList();
         System.out.printf("Number Of Shops: %d%n", coffeeShops.size());
