@@ -3,7 +3,7 @@ import com.mongodb.MongoClient
 
 def mongoClient = new MongoClient();
 def collection = mongoClient.getDB("Cafelito").getCollection("CoffeeShop")
-//collection.drop()
+collection.drop()
 
 def xmlSlurper = new XmlSlurper().parse(new File('../resources/new-coffee-shops.xml'))
 
