@@ -18,12 +18,32 @@ public class Example {
         DBCollection orders = database.getCollection("orders");
         JacksonDBCollection<Order, String> collection = JacksonDBCollection.wrap(orders, Order.class, String.class);
 
+        return save(order, collection,
+                    () -> Response.created(URI.create(order.getId())).entity(order).build(),
+                    () -> Response.serverError().build());
+    }
+
+    private Response save(final Order order,
+                          final JacksonDBCollection<Order, String> collection,
+                          final SuccessHandler successHandler, 
+                          final ErrorHandler errorHandler) {
         WriteResult<Order, String> writeResult = collection.save(order);
         if (writeResult == null) {
-            return Response.serverError().build();
-        }
-        order.setId(writeResult.getSavedId());
+            return errorHandler.onError();
+        } else {
+            order.setId(writeResult.getSavedId());
 
-        return Response.created(URI.create(order.getId())).entity(order).build();
+            return successHandler.onSuccess();
+        }
+    }
+
+    @FunctionalInterface
+    private interface SuccessHandler {
+        Response onSuccess();
+    }
+
+    @FunctionalInterface
+    private interface ErrorHandler {
+        Response onError();
     }
 }
